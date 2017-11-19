@@ -20,10 +20,11 @@ public class Repository {
     public void parseTableCommand(String command){
         command = command.replaceAll(";", "");
         StringTokenizer parts = new StringTokenizer(command, " ");
-        String operation = parts.nextToken() + " " + parts.nextToken();
-        String tableName = parts.nextToken();
-        System.out.println("Operation: " + operation + "\n" +
-                "Table name: " + tableName);
+        String operation = parts.nextToken();
+        if (operation.toUpperCase().equals("CREATE"))
+            parseCreateCommand(command);
+        if (operation.toUpperCase().equals("DROP"))
+            parseDropCommand(command);
     }
 
     public void parseRecordsCommand(String command) throws Exception {
@@ -36,6 +37,35 @@ public class Repository {
             parseDeleteCommand(command);
         if (operation.toUpperCase().equals("UPDATE"))
             parseUpdateCommand(command);
+    }
+
+    public void parseCreateCommand(String command){
+        Map<String, String> columnsHash = new HashMap<>();
+        command = command.replaceAll(", ", ",");
+        command = command.replaceAll(" \\(", "\\(");
+        command = command.replaceAll("\\( ", "\\(");
+        StringTokenizer parts = new StringTokenizer(command, " ");
+        String operation = parts.nextToken() + " " + parts.nextToken();
+        String tableName = parts.nextToken();
+        tableName = tableName.substring(0, tableName.indexOf("("));
+        String columns = command.substring(command.indexOf("(") + 1, command.indexOf(")"));
+        StringTokenizer columnsTokenizer = new StringTokenizer(columns, ",");
+        while (columnsTokenizer.hasMoreTokens()){
+            String column = columnsTokenizer.nextToken();
+            columnsHash.put(column.substring(0,column.indexOf(" ")), column.substring(column.indexOf(" ") + 1, column.length()));
+        }
+        System.out.println("Operation: " + operation + "\n" +
+                            "Table name: " + tableName + "\n" +
+                            "Columns and Types: " + columnsHash.toString());
+    }
+
+    public void parseDropCommand(String command){
+        StringTokenizer parts = new StringTokenizer(command, " ");
+        String operation = parts.nextToken() + " " + parts.nextToken();
+        String tableName = parts.nextToken();
+
+        System.out.println("Operation: " + operation + "\n" +
+                            "Table name: " + tableName);
     }
 
     /*
