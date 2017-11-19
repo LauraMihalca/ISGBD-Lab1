@@ -16,34 +16,35 @@ public class Main {
         return command;
     }
 
-    public static void manageCommand(String command){
+    public static void manageCommand(String command) throws Exception {
         Controller controller = new Controller();
         StringTokenizer stringTokenizer = new StringTokenizer(command, " ");
         String keyword = stringTokenizer.nextToken();
-        switch (keyword){
-            case "CREATE": controller.createTable(command);
-            case "DROP": controller.dropTable(command);
-            case "INSERT": controller.insertRecord(command);
-            case "UPDATE": controller.updateRecord(command);
-            case "DELETE": controller.deleteRecord(command);
-        }
+        if (keyword.toUpperCase().equals("CREATE"))
+            controller.createTable(command);
+        if (keyword.toUpperCase().equals("DROP"))
+            controller.dropTable(command);
+        if (keyword.toUpperCase().equals("INSERT"))
+            controller.insertRecord(command);
+        if (keyword.toUpperCase().equals("UPDATE"))
+            controller.updateRecord(command);
+        if (keyword.toUpperCase().equals("DELETE"))
+            controller.deleteRecord(command);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         while (true) {
             menu();
             String command = getUserInput();
-            switch (command) {
-                case ("1"):
-                    System.out.println("Enter a command:");
-                    Scanner scanner = new Scanner(System.in);
-                    String dbCommand = scanner.next();
-                    manageCommand(dbCommand);
-                case ("2"): {
+            if (command.equals("1")) {
+                System.out.println("Enter a command:");
+                Scanner scanner = new Scanner(System.in);
+                String dbCommand = scanner.nextLine();
+                manageCommand(dbCommand);
+            }else {
                     System.out.println("You are exiting the database system ...");
                     return;
                 }
             }
         }
-    }
 }
