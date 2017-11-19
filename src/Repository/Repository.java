@@ -12,6 +12,11 @@ public class Repository {
 
     }
 
+    /*
+    * de forma:
+    * CREATE TABLE TABLE_NAME
+    * DROP TABLE TABLE_NAME
+    * */
     public void parseTableCommand(String command){
         command = command.replaceAll(";", "");
         StringTokenizer parts = new StringTokenizer(command, " ");
@@ -33,6 +38,10 @@ public class Repository {
             parseUpdateCommand(command);
     }
 
+    /*
+    * de forma:
+    * INSERT INTO TABLE_NAME(COL1, COL2, ...) VALUES (VAL1, VAL2, ...)
+    */
     public void parseInsertCommand(String command) throws Exception {
         command = command.replaceAll(", ", ",");
         command = command.replaceAll(" \\(", "\\(");
@@ -66,17 +75,29 @@ public class Repository {
                 "Values: " + valuesArray.toString());
     }
 
+    /*
+    * de forma:
+    * DELETE FROM TABLE_NAME WHERE CONDITION
+    * Conditia nu am reusit sa o sparg pt ca trebuie sa ma gandesc la o modalitate prin care sa acopar toate posibilitatile (=,>,<,>=,<=,==,!=)
+    * */
     public void parseDeleteCommand(String command){
         StringTokenizer parts = new StringTokenizer(command, " ");
         String operation = parts.nextToken() + " " + parts.nextToken();
         String tableName = parts.nextToken();
-        String condition = parts.nextToken() + " " + parts.nextToken(); // de forma id=3, nu id = 3
+        String keyword2 = parts.nextToken();
+        String condition = parts.nextToken(); // de forma id=3, nu id = 3
 
         System.out.println("Operation: " + operation + "\n" +
                         "Table name: " + tableName + "\n" +
+                        "Keyword: " + keyword2 + "\n" +
                         "Condition: " + condition);
     }
 
+    /*
+    * de forma:
+    * UPDATE TABLE_NAME SET (COL1=VAL1, COL2=VAL2, ...) WHERE CONDITION
+    * Conditia nu am reusit sa o sparg pt ca trebuie sa ma gandesc la o modalitate prin care sa acopar toate posibilitatile (=,>,<,>=,<=,==,!=)
+    * */
     public void parseUpdateCommand(String command){
         Map<String, String> updatedPairs = new HashMap<>();
         command = command.replaceAll("\\( ", "\\(");
@@ -92,12 +113,14 @@ public class Repository {
             String column = columnsTokenizer.nextToken();
             updatedPairs.put(column.substring(0, column.indexOf("=")), column.substring(column.indexOf("=") + 1, column.length()));
         }
-        String condition = parts.nextToken() + " " + parts.nextToken(); // de forma id=3, nu id = 3
+        String keyword2 = parts.nextToken();
+        String condition = parts.nextToken(); // de forma id=3, nu id = 3
 
         System.out.println("Operation: " + operation + "\n" +
                 "Table name: " + tableName + "\n" +
                 "Keyword: " + keyword + "\n" +
                 "Updated Pairs: " + updatedPairs.toString() + "\n" +
+                "Keyword: " + keyword2 + "\n" +
                 "Condition: " + condition);
 
     }
