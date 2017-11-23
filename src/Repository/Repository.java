@@ -1,6 +1,11 @@
 package Repository;
 
+import domain.vo.OperationVO;
+import domain.vo.SelectionCriteriaVO;
+
 import java.util.*;
+
+import static utils.DataOperation.DELETE;
 
 /**
  * Created by Laura on 11/19/2017
@@ -8,7 +13,7 @@ import java.util.*;
 
 public class Repository {
 
-    public Repository(){
+    public Repository() {
 
     }
 
@@ -17,7 +22,7 @@ public class Repository {
     * CREATE TABLE TABLE_NAME
     * DROP TABLE TABLE_NAME
     * */
-    public void parseTableCommand(String command){
+    public void parseTableCommand(String command) {
         command = command.replaceAll(";", "");
         StringTokenizer parts = new StringTokenizer(command, " ");
         String operation = parts.nextToken();
@@ -27,19 +32,7 @@ public class Repository {
             parseDropCommand(command);
     }
 
-    public void parseRecordsCommand(String command) throws Exception {
-        command = command.replaceAll(";", "");
-        StringTokenizer parts = new StringTokenizer(command, " ");
-        String operation = parts.nextToken();
-        if (operation.toUpperCase().equals("INSERT"))
-            parseInsertCommand(command);
-        if (operation.toUpperCase().equals("DELETE"))
-            parseDeleteCommand(command);
-        if (operation.toUpperCase().equals("UPDATE"))
-            parseUpdateCommand(command);
-    }
-
-    public void parseCreateCommand(String command){
+    private void parseCreateCommand(String command) {
         Map<String, String> columnsHash = new HashMap<>();
         command = command.replaceAll(", ", ",");
         command = command.replaceAll(" \\(", "\\(");
@@ -50,22 +43,22 @@ public class Repository {
         tableName = tableName.substring(0, tableName.indexOf("("));
         String columns = command.substring(command.indexOf("(") + 1, command.indexOf(")"));
         StringTokenizer columnsTokenizer = new StringTokenizer(columns, ",");
-        while (columnsTokenizer.hasMoreTokens()){
+        while (columnsTokenizer.hasMoreTokens()) {
             String column = columnsTokenizer.nextToken();
-            columnsHash.put(column.substring(0,column.indexOf(" ")), column.substring(column.indexOf(" ") + 1, column.length()));
+            columnsHash.put(column.substring(0, column.indexOf(" ")), column.substring(column.indexOf(" ") + 1, column.length()));
         }
         System.out.println("Operation: " + operation + "\n" +
-                            "Table name: " + tableName + "\n" +
-                            "Columns and Types: " + columnsHash.toString());
+                "Table name: " + tableName + "\n" +
+                "Columns and Types: " + columnsHash.toString());
     }
 
-    public void parseDropCommand(String command){
+    private void parseDropCommand(String command) {
         StringTokenizer parts = new StringTokenizer(command, " ");
         String operation = parts.nextToken() + " " + parts.nextToken();
         String tableName = parts.nextToken();
 
         System.out.println("Operation: " + operation + "\n" +
-                            "Table name: " + tableName);
+                "Table name: " + tableName);
     }
 
     /*
@@ -110,17 +103,33 @@ public class Repository {
     * DELETE FROM TABLE_NAME WHERE CONDITION
     * Conditia nu am reusit sa o sparg pt ca trebuie sa ma gandesc la o modalitate prin care sa acopar toate posibilitatile (=,>,<,>=,<=,==,!=)
     * */
-    public void parseDeleteCommand(String command){
+    public OperationVO parseDeleteCommand(String command) throws Exception {
+        System.out.print("hetree");
+        OperationVO deleteOperation = new OperationVO();
+        deleteOperation.setOperation(DELETE);
+
         StringTokenizer parts = new StringTokenizer(command, " ");
         String operation = parts.nextToken() + " " + parts.nextToken();
         String tableName = parts.nextToken();
         String keyword2 = parts.nextToken();
         String condition = parts.nextToken(); // de forma id=3, nu id = 3
+        String[] conditionParts = condition.split("=");
+
+        if (conditionParts.length != 2) throw new Exception("Invalid condition");
 
         System.out.println("Operation: " + operation + "\n" +
-                        "Table name: " + tableName + "\n" +
-                        "Keyword: " + keyword2 + "\n" +
-                        "Condition: " + condition);
+                "Table name: " + tableName + "\n" +
+                "Keyword: " + keyword2 + "\n" +
+                "Condition: " + condition);
+
+        SelectionCriteriaVO criteria = new SelectionCriteriaVO();
+        criteria.setKey(conditionParts[0]);
+        criteria.setValue(conditionParts[1]);
+        deleteOperation.setTableName(tableName);
+        List<SelectionCriteriaVO> criteriaList = new ArrayList<>();
+        criteriaList.add(criteria);
+        deleteOperation.setCriteria(criteriaList);
+        return deleteOperation;
     }
 
     /*
@@ -128,7 +137,7 @@ public class Repository {
     * UPDATE TABLE_NAME SET (COL1=VAL1, COL2=VAL2, ...) WHERE CONDITION
     * Conditia nu am reusit sa o sparg pt ca trebuie sa ma gandesc la o modalitate prin care sa acopar toate posibilitatile (=,>,<,>=,<=,==,!=)
     * */
-    public void parseUpdateCommand(String command){
+    public void parseUpdateCommand(String command) {
         Map<String, String> updatedPairs = new HashMap<>();
         command = command.replaceAll("\\( ", "\\(");
         command = command.replaceAll(", ", ",");
@@ -139,7 +148,7 @@ public class Repository {
         String columns = parts.nextToken();
         columns = columns.substring(columns.indexOf("(") + 1, columns.indexOf(")"));
         StringTokenizer columnsTokenizer = new StringTokenizer(columns, ",");
-        while (columnsTokenizer.hasMoreTokens()){
+        while (columnsTokenizer.hasMoreTokens()) {
             String column = columnsTokenizer.nextToken();
             updatedPairs.put(column.substring(0, column.indexOf("=")), column.substring(column.indexOf("=") + 1, column.length()));
         }

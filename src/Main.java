@@ -28,8 +28,8 @@ public class Main {
             controller.insertRecord(command);
         if (keyword.toUpperCase().equals("UPDATE"))
             controller.updateRecord(command);
-        if (keyword.toUpperCase().equals("DELETE"))
-            controller.deleteRecord(command);
+        if (keyword.toUpperCase().equals("DELETE")){
+            controller.deleteRecord(command);}
     }
 
     public static void main(String[] args) throws Exception {

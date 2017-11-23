@@ -24,15 +24,15 @@ public class Controller {
     }
 
     public void insertRecord(String command) throws Exception {
-        repository.parseRecordsCommand(command);
+        repository.parseInsertCommand(command);
     }
 
     public void updateRecord(String command) throws Exception {
-        repository.parseRecordsCommand(command);
+        repository.parseUpdateCommand(command);
     }
 
     public void deleteRecord(String command) throws Exception {
-        repository.parseRecordsCommand(command);
+        repository.parseDeleteCommand(command);
     }
 
 
