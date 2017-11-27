@@ -33,7 +33,7 @@ public class Repository {
     }
 
     private void parseCreateCommand(String command) {
-        Map<String, String> columnsHash = new HashMap<>();
+        Map<String, Map<String, Integer>> columnsHash = new HashMap<>();
         command = command.replaceAll(", ", ",");
         command = command.replaceAll(" \\(", "\\(");
         command = command.replaceAll("\\( ", "\\(");
@@ -41,15 +41,17 @@ public class Repository {
         String operation = parts.nextToken() + " " + parts.nextToken();
         String tableName = parts.nextToken();
         tableName = tableName.substring(0, tableName.indexOf("("));
-        String columns = command.substring(command.indexOf("(") + 1, command.indexOf(")"));
+        String columns = command.substring(command.indexOf("(") + 1, command.lastIndexOf(")"));
         StringTokenizer columnsTokenizer = new StringTokenizer(columns, ",");
         while (columnsTokenizer.hasMoreTokens()) {
             String column = columnsTokenizer.nextToken();
-            columnsHash.put(column.substring(0, column.indexOf(" ")), column.substring(column.indexOf(" ") + 1, column.length()));
+            Map<String, Integer> typeAndSize = new HashMap<>();
+            typeAndSize.put(column.substring(column.indexOf(" ") + 1, column.indexOf("(")), Integer.parseInt(column.substring(column.indexOf("(") + 1, column.indexOf(")"))));
+            columnsHash.put(column.substring(0, column.indexOf(" ")), typeAndSize);
         }
         System.out.println("Operation: " + operation + "\n" +
                 "Table name: " + tableName + "\n" +
-                "Columns and Types: " + columnsHash.toString());
+                "Columns, Types and Sizes: " + columnsHash.toString());
     }
 
     private void parseDropCommand(String command) {
@@ -141,6 +143,7 @@ public class Repository {
         Map<String, String> updatedPairs = new HashMap<>();
         command = command.replaceAll("\\( ", "\\(");
         command = command.replaceAll(", ", ",");
+        command = command.replaceAll(";", "");
         StringTokenizer parts = new StringTokenizer(command, " ");
         String operation = parts.nextToken();
         String tableName = parts.nextToken();
@@ -154,13 +157,17 @@ public class Repository {
         }
         String keyword2 = parts.nextToken();
         String condition = parts.nextToken(); // de forma id=3, nu id = 3
+        String key = condition.substring(0, condition.indexOf("="));
+        String value = condition.substring(condition.indexOf("=") + 1, condition.length());
+
 
         System.out.println("Operation: " + operation + "\n" +
                 "Table name: " + tableName + "\n" +
                 "Keyword: " + keyword + "\n" +
                 "Updated Pairs: " + updatedPairs.toString() + "\n" +
                 "Keyword: " + keyword2 + "\n" +
-                "Condition: " + condition);
+                "Key: " + key + "\n" +
+                "Value: " + value);
 
     }
 }
