@@ -5,12 +5,12 @@ import java.util.StringTokenizer;
 
 public class Main {
 
-    public static void menu(){
+    public static void menu() {
         System.out.println("1. Command\n" +
                 "2. Exit.\n");
     }
 
-    public static String getUserInput(){
+    public static String getUserInput() {
         Scanner scanner = new Scanner(System.in);
         String command = scanner.next();
         return command;
@@ -28,8 +28,9 @@ public class Main {
             controller.insertRecord(command);
         if (keyword.toUpperCase().equals("UPDATE"))
             controller.updateRecord(command);
-        if (keyword.toUpperCase().equals("DELETE")){
-            controller.deleteRecord(command);}
+        if (keyword.toUpperCase().equals("DELETE")) {
+            controller.deleteRecord(command);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -41,10 +42,10 @@ public class Main {
                 Scanner scanner = new Scanner(System.in);
                 String dbCommand = scanner.nextLine();
                 manageCommand(dbCommand);
-            }else {
-                    System.out.println("You are exiting the database system ...");
-                    return;
-                }
+            } else {
+                System.out.println("You are exiting the database system ...");
+                return;
             }
         }
+    }
 }
