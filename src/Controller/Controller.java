@@ -1,25 +1,33 @@
 package Controller;
 
 import Repository.Repository;
+import domain.vo.OperationVO;
+import domain.vo.CommonDao;
 
-import java.util.StringTokenizer;
+import java.sql.SQLException;
 
 /**
  * Created by Laura on 11/4/2017
  */
 
 public class Controller {
+    private CommonDao tableDao;
 
     Repository repository = new Repository();
 
-    public Controller(){
+    public Controller() {
+        try {
+            tableDao = new CommonDao();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void createTable(String command){
+    public void createTable(String command) {
         repository.parseTableCommand(command);
     }
 
-    public void dropTable(String command){
+    public void dropTable(String command) {
         repository.parseTableCommand(command);
     }
 
@@ -32,7 +40,8 @@ public class Controller {
     }
 
     public void deleteRecord(String command) throws Exception {
-        repository.parseDeleteCommand(command);
+       OperationVO op= repository.parseDeleteCommand(command);
+       tableDao.executeRowsOperation(op);
     }
 
 

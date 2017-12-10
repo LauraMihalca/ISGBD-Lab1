@@ -13,10 +13,6 @@ import static utils.DataOperation.DELETE;
 
 public class Repository {
 
-    public Repository() {
-
-    }
-
     /*
     * de forma:
     * CREATE TABLE TABLE_NAME
@@ -103,10 +99,8 @@ public class Repository {
     /*
     * de forma:
     * DELETE FROM TABLE_NAME WHERE CONDITION
-    * Conditia nu am reusit sa o sparg pt ca trebuie sa ma gandesc la o modalitate prin care sa acopar toate posibilitatile (=,>,<,>=,<=,==,!=)
     * */
     public OperationVO parseDeleteCommand(String command) throws Exception {
-        System.out.print("hetree");
         OperationVO deleteOperation = new OperationVO();
         deleteOperation.setOperation(DELETE);
 
