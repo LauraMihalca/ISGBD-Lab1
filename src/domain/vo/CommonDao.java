@@ -2,6 +2,7 @@ package domain.vo;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.sun.org.apache.xpath.internal.operations.Operation;
+import utils.ColumnType;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,6 +11,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static utils.ColumnType.getByValue;
 
 /**
  * Created by user on 05.12.2017.
@@ -116,11 +119,11 @@ public class CommonDao {
     private boolean isValidType(OperationVO operationVO) throws SQLException {
         List<String> columnsList = getColumns(getTableId(operationVO.getTableName()));
         SelectionCriteriaVO criteria = operationVO.getCriteria();
-        for( int i = 0; i < columnsList.size (); i++){
+        for (int i = 0; i < columnsList.size(); i++) {
             String currentColumn = columnsList.get(i);
-            if (criteria.getKey().equals(currentColumn.substring(0,currentColumn.indexOf("#")))){
-                if (criteria.getValue().equals(currentColumn.substring(currentColumn.indexOf("#"), currentColumn.lastIndexOf("#")))){
-                    if (criteria.getValue().length() <= Integer.parseInt(currentColumn.substring(currentColumn.lastIndexOf("#"), currentColumn.length()))){
+            if (criteria.getKey().equals(currentColumn.substring(0, currentColumn.indexOf("#")))) {
+                if (criteria.getValue().equals(currentColumn.substring(currentColumn.indexOf("#"), currentColumn.lastIndexOf("#")))) {
+                    if (criteria.getValue().length() <= Integer.parseInt(currentColumn.substring(currentColumn.lastIndexOf("#"), currentColumn.length()))) {
                         return true;
                     }
                 }
@@ -189,7 +192,33 @@ public class CommonDao {
     }
 
 
-    private List<String> getDataByCriteria(OperationVO operation) {
+    private List<String> getDataByCriteria(OperationVO operation) throws SQLException {
+        Long tableId = getTableId(operation.getTableName());
+        StringBuilder stmtText = new StringBuilder("SELECT pk_value, value FROM `data` where `key` ="
+                + tableId + " AND ");
+        stmtText.append(getWhereConditionDependingPk(tableId, operation));
+        System.out.println(stmtText);
+
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery(stmtText.toString());
+        while (rs.next()) {
+            Long primaryKeyValue = rs.getLong(1);
+            String otherValues = rs.getString(2);
+
+        }
+
+
+        rs.close();
+        stmt.close();
+
         return null;
+    }
+
+    private ColumnVO toColumnVO(String fullColumn) {
+        String[] columnAttributes = fullColumn.split("#");
+        return new ColumnVO(columnAttributes[0],
+                getByValue(columnAttributes[1]),
+                Long.parseLong(columnAttributes[2]),
+                columnAttributes[3].equals("1"));
     }
 }

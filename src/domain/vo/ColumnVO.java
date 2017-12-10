@@ -14,6 +14,13 @@ public class ColumnVO {
     public ColumnVO() {
     }
 
+    public ColumnVO(String name, ColumnType type, Long length, boolean isPrimaryKey) {
+        this.name = name;
+        this.length = length;
+        this.type = type;
+        this.isPrimaryKey = isPrimaryKey;
+    }
+
     public String getName() {
         return name;
     }
@@ -30,9 +37,13 @@ public class ColumnVO {
         this.length = length;
     }
 
-    public ColumnType getType() { return type; }
+    public ColumnType getType() {
+        return type;
+    }
 
-    public void setType(ColumnType type) {this.type = type; }
+    public void setType(ColumnType type) {
+        this.type = type;
+    }
 
     public boolean isPrimaryKey() {
         return isPrimaryKey;
