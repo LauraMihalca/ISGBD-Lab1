@@ -10,7 +10,7 @@ import java.util.List;
 public class OperationVO {
     private String tableName;
     private DataOperation operation;
-    private List<SelectionCriteriaVO> criteria; // this list will contain the data(pairs<Key,Value>) from where condition
+    private SelectionCriteriaVO criteria; // this list will contain the data(pairs<Key,Value>) from where condition
     private List<SelectionCriteriaVO> newValues; // this list will be used for update.
     // It will contain the pairs<Key,Value> from set statement.
     // e.g <"name","Vlad"> means set name="Vlad"
@@ -34,11 +34,11 @@ public class OperationVO {
         this.operation = operation;
     }
 
-    public List<SelectionCriteriaVO> getCriteria() {
+    public SelectionCriteriaVO getCriteria() {
         return criteria;
     }
 
-    public void setCriteria(List<SelectionCriteriaVO> criteria) {
+    public void setCriteria(SelectionCriteriaVO criteria) {
         this.criteria = criteria;
     }
 
