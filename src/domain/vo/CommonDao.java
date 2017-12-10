@@ -4,6 +4,7 @@ import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.sun.org.apache.xpath.internal.operations.Operation;
 import utils.ColumnType;
 
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -51,10 +52,10 @@ public class CommonDao {
     }
 
     public void executeRowsOperation(OperationVO operation) throws SQLException {
-        if (!existsTable(operation.getTableName())) {
-            System.out.print("table not found");
-            return;
-        }
+//        if (!existsTable(operation.getTableName())) {
+//            System.out.print("table not found");
+//            return;
+//        }
         if (!isValidType(operation)) {
             System.out.print("Invalid condition");
             return;
@@ -114,21 +115,60 @@ public class CommonDao {
         return stmtText.toString();
     }
 
+    private boolean validateBigint(long length, String value){
+        try{
+            Long.parseLong(value);
+            return value.length() <= length;
+        }catch (Exception e){
+            return false;
+        }
+    }
 
-    // not done,for  condition key=value  it will check that value is by expected type
+    private boolean validateInt(Long length, String value){
+        try{
+            Integer.parseInt(value);
+            return value.length() <= length;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+    private boolean verifyColumnType(ColumnVO columnVO, String value){
+        switch (columnVO.getType()){
+            case BIGINT: return validateBigint(columnVO.getLength(), value);
+            case INT: return validateInt(columnVO.getLength(), value);
+            case VARCHAR: return value.length() <= columnVO.getLength();
+            default: return false;
+        }
+    }
+
+
     private boolean isValidType(OperationVO operationVO) throws SQLException {
         List<String> columnsList = getColumns(getTableId(operationVO.getTableName()));
         SelectionCriteriaVO criteria = operationVO.getCriteria();
-        for (int i = 0; i < columnsList.size(); i++) {
-            String currentColumn = columnsList.get(i);
-            if (criteria.getKey().equals(currentColumn.substring(0, currentColumn.indexOf("#")))) {
-                if (criteria.getValue().equals(currentColumn.substring(currentColumn.indexOf("#"), currentColumn.lastIndexOf("#")))) {
-                    if (criteria.getValue().length() <= Integer.parseInt(currentColumn.substring(currentColumn.lastIndexOf("#"), currentColumn.length()))) {
-                        return true;
+            for (int i = 0; i < columnsList.size(); i++) {
+                String currentColumn = columnsList.get(i);
+                ColumnVO columnVO = toColumnVO(currentColumn);
+                if (columnVO.getName().equals(criteria.getKey()) && !verifyColumnType(columnVO, criteria.getValue())) {
+                    System.out.println("Invalid value for criteria " + columnVO.getName() + ". Type or size mismatch.");
+                    return false;
+                }
+            }
+        List<SelectionCriteriaVO> newValues = operationVO.getNewValues();
+        if (newValues != null) {
+                for (int i = 0; i < newValues.size(); i++) {
+                    SelectionCriteriaVO currentValue = newValues.get(i);
+                    for (int j = 0; j < columnsList.size(); j++) {
+                        String currentColumn = columnsList.get(i);
+                        ColumnVO columnVO = toColumnVO(currentColumn);
+                        if (columnVO.getName().equals(currentValue.getKey()) && !verifyColumnType(columnVO, currentValue.getValue())) {
+                            System.out.println("Invalid value for column " + columnVO.getName() + ". Type or size mismatch.");
+                            return false;
+                        }
                     }
                 }
             }
-        }
+
         return false;
     }
 
