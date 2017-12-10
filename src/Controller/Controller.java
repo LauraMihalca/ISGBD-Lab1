@@ -23,11 +23,11 @@ public class Controller {
         }
     }
 
-    public void createTable(String command) {
+    public void createTable(String command) throws Exception {
         repository.parseTableCommand(command);
     }
 
-    public void dropTable(String command) {
+    public void dropTable(String command) throws Exception {
         repository.parseTableCommand(command);
     }
 

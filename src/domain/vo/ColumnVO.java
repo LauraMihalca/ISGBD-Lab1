@@ -1,11 +1,14 @@
 package domain.vo;
 
+import utils.ColumnType;
+
 /**
  * Created by maria-roxana on 23.11.2017.
  */
 public class ColumnVO {
     private String name;
     private Long length;
+    private ColumnType type;
     private boolean isPrimaryKey;
 
     public ColumnVO() {
@@ -26,6 +29,10 @@ public class ColumnVO {
     public void setLength(Long length) {
         this.length = length;
     }
+
+    public ColumnType getType() { return type; }
+
+    public void setType(ColumnType type) {this.type = type; }
 
     public boolean isPrimaryKey() {
         return isPrimaryKey;

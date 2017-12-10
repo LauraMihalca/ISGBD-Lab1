@@ -2,6 +2,8 @@ package Repository;
 
 import domain.vo.OperationVO;
 import domain.vo.SelectionCriteriaVO;
+import utils.ReservedWord;
+import utils.ColumnType;
 
 import java.util.*;
 
@@ -13,13 +15,34 @@ import static utils.DataOperation.DELETE;
 
 public class Repository {
 
+    public Repository() {
+
+    }
+
+    public boolean checkType(String value){
+        for (ColumnType c : ColumnType.values()) {
+            if (c.name().equalsIgnoreCase(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean validateType(String value){
+        try{
+        }catch (Exception e){
+            return false;
+        }
+        return false;
+    }
+
     /*
     * de forma:
     * CREATE TABLE TABLE_NAME
     * DROP TABLE TABLE_NAME
     * */
-    public void parseTableCommand(String command) {
-        command = command.replaceAll(";", "");
+    public void parseTableCommand(String command) throws Exception {
+        command = command.substring(0, command.indexOf(";"));
         StringTokenizer parts = new StringTokenizer(command, " ");
         String operation = parts.nextToken();
         if (operation.toUpperCase().equals("CREATE"))
@@ -28,7 +51,7 @@ public class Repository {
             parseDropCommand(command);
     }
 
-    private void parseCreateCommand(String command) {
+    private void parseCreateCommand(String command) throws Exception {
         Map<String, Map<String, Integer>> columnsHash = new HashMap<>();
         command = command.replaceAll(", ", ",");
         command = command.replaceAll(" \\(", "\\(");
@@ -39,15 +62,38 @@ public class Repository {
         tableName = tableName.substring(0, tableName.indexOf("("));
         String columns = command.substring(command.indexOf("(") + 1, command.lastIndexOf(")"));
         StringTokenizer columnsTokenizer = new StringTokenizer(columns, ",");
+        String primaryKey = "";
         while (columnsTokenizer.hasMoreTokens()) {
             String column = columnsTokenizer.nextToken();
+            String columnName = column.substring(0, column.indexOf(" "));
             Map<String, Integer> typeAndSize = new HashMap<>();
-            typeAndSize.put(column.substring(column.indexOf(" ") + 1, column.indexOf("(")), Integer.parseInt(column.substring(column.indexOf("(") + 1, column.indexOf(")"))));
-            columnsHash.put(column.substring(0, column.indexOf(" ")), typeAndSize);
+            String type = column.substring(column.indexOf(" ") + 1, column.indexOf("("));
+            if (!checkType(type)) {
+                System.err.println("Please enter a valid type for " + columnName + ".");
+                return;
+            }
+            int size = Integer.parseInt(column.substring(column.indexOf("(") + 1, column.indexOf(")")));
+            typeAndSize.put(type, size);
+            if (!primaryKey.equals("")) {
+                System.out.println("Only one PRIMARY KEY accepted.");
+            } else {
+                if (column.substring(column.lastIndexOf(" ") + 1, column.length()).equalsIgnoreCase(ReservedWord.PRIMARY_KEY.toString())) {
+                    primaryKey = columnName;
+                } else {
+                    if (!column.substring(column.lastIndexOf(" ") + 1, column.length()).equals("")) {
+                        System.out.println(column.substring(column.lastIndexOf(" ") + 1, column.length()) + " not supported/known. Please use Primary_key.");
+                        return;
+                    }
+                }
+            }
+            columnsHash.put(columnName, typeAndSize);
         }
-        System.out.println("Operation: " + operation + "\n" +
-                "Table name: " + tableName + "\n" +
-                "Columns, Types and Sizes: " + columnsHash.toString());
+
+
+            System.out.println("Operation: " + operation + "\n" +
+                    "Table name: " + tableName + "\n" +
+                    "Columns, Types and Sizes: " + columnsHash.toString() + "\n" +
+                    "Primary Key: " + primaryKey);
     }
 
     private void parseDropCommand(String command) {

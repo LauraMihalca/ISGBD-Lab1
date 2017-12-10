@@ -114,15 +114,19 @@ public class CommonDao {
 
     // not done,for  condition key=value  it will check that value is by expected type
     private boolean isValidType(OperationVO operationVO) throws SQLException {
-        Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT VALUE FROM `column` WHERE `KEY`= " +
-                getTableId(operationVO.getTableName()));
-        rs.next();
-
-        Long maxId = rs.getLong(1);
-        rs.close();
-        stmt.close();
-        return true;
+        List<String> columnsList = getColumns(getTableId(operationVO.getTableName()));
+        SelectionCriteriaVO criteria = operationVO.getCriteria();
+        for( int i = 0; i < columnsList.size (); i++){
+            String currentColumn = columnsList.get(i);
+            if (criteria.getKey().equals(currentColumn.substring(0,currentColumn.indexOf("#")))){
+                if (criteria.getValue().equals(currentColumn.substring(currentColumn.indexOf("#"), currentColumn.lastIndexOf("#")))){
+                    if (criteria.getValue().length() <= Integer.parseInt(currentColumn.substring(currentColumn.lastIndexOf("#"), currentColumn.length()))){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     //
