@@ -122,9 +122,7 @@ public class Repository {
         criteria.setKey(conditionParts[0]);
         criteria.setValue(conditionParts[1]);
         deleteOperation.setTableName(tableName);
-        List<SelectionCriteriaVO> criteriaList = new ArrayList<>();
-        criteriaList.add(criteria);
-        deleteOperation.setCriteria(criteriaList);
+        deleteOperation.setCriteria(criteria);
         return deleteOperation;
     }
 
