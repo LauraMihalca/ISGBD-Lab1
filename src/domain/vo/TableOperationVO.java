@@ -1,5 +1,7 @@
 package domain.vo;
 
+import utils.TableOperation;
+
 import java.util.List;
 
 /**
@@ -8,9 +10,18 @@ import java.util.List;
  */
 public class TableOperationVO {
     private String name;
+    private TableOperation tableOperation;
     private List<ColumnVO> columns;
 
     public TableOperationVO() {
+    }
+
+    public TableOperation getTableOperation() {
+        return tableOperation;
+    }
+
+    public void setTableOperation(TableOperation tableOperation) {
+        this.tableOperation = tableOperation;
     }
 
     public String getName() {

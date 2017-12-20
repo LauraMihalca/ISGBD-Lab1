@@ -42,6 +42,15 @@ public class Main {
                 Scanner scanner = new Scanner(System.in);
                 String dbCommand = scanner.nextLine();
                 manageCommand(dbCommand);
+                // date de test
+//                manageCommand("UPDATE STUDENT SET (name=icss) WHERE id=5");
+//                manageCommand("UPDATE STUDENT SET (name=itWorks) WHERE name=namee");
+//                manageCommand("UPDATE STUDENT SET (name=itWorks) WHERE name=nameee");
+//                manageCommand("DELETE FROM student where name=icss");
+//                manageCommand("DELETE FROM student where name=ics");
+//                manageCommand("DROP TABLE kk"); // not exists -> shows message
+//                manageCommand("DROP TABLE dd"); // existent is removed
+//                manageCommand("CREATE TABLE test(idd BIGINT(25) Primary_key) ");
             } else {
                 System.out.println("You are exiting the database system ...");
                 return;

@@ -3,6 +3,8 @@ package domain.vo;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.sun.org.apache.xpath.internal.operations.Operation;
 import utils.ColumnType;
+import utils.DataOperation;
+import utils.TableOperation;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -11,8 +13,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static utils.ColumnType.getByValue;
+import static utils.DataOperation.DELETE;
 
 /**
  * Created by user on 05.12.2017.
@@ -28,20 +32,13 @@ public class CommonDao {
         dataSource.setPassword("root");
         dataSource.setServerName("localhost");
         dataSource.setDatabaseName("isgbd1");
-        dataSource.setPortNumber(3306); //
+        dataSource.setPortNumber(3306);
         conn = dataSource.getConnection();
-        Statement stmt = conn.createStatement();
-        // used to test if update works it will be deleted
-//        int rs = stmt.executeUpdate("INSERT into value values(2,'KK')"); //"SELECT COUNT(KEY) FROM tables");
-//        rs.close();
-        stmt.close();
-//        conn.close();
-
     }
 
     public boolean existsTable(String tableName) throws SQLException {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT COUNT('KEY') FROM tables where VALUE like '" + tableName + "'");
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(`KEY`) FROM `tables` where `VALUE` like '" + tableName + "'");
         rs.next();
 
         boolean existsTable = rs.getLong(1) > 0;
@@ -59,34 +56,97 @@ public class CommonDao {
             System.out.print("Invalid condition");
             return;
         }
-
         switch (operation.getOperation()) {
             case ADD:
-            case UPDATE: {
+                processAdd(operation);
                 return;
-            }
+            case UPDATE:
+                processUpdate(operation);
+                return;
             case DELETE:
                 processDelete(operation);
+                return;
         }
+    }
 
+    private void processAdd(OperationVO operationVO) throws SQLException {
+        Long maxIdForPk = getMaxKeyFromTable(operationVO.getTableName());
+
+        Statement stmt = conn.createStatement();
+        StringBuilder stmtText = new StringBuilder("INSERT INTO `value`(`key`,pk_value,`value`) values(");
+        stmtText.append(getTableId(operationVO.getTableName()))
+                .append(",")
+                .append(maxIdForPk + 1)
+                .append(",'")
+                .append(getInsertTextForValues(operationVO))
+                .append("')");
+
+        stmt.executeUpdate(stmtText.toString());
+
+        stmt.close();
+    }
+
+    private String getInsertTextForValues(OperationVO operationVO) throws SQLException {
+        String concatenatedValues = "";
+        for (ColumnVO columnVO : getAllColumnVOs(getTableId(operationVO.getTableName()))) {
+            String columnName = getValueForColumn(null, columnVO.getName(), operationVO);
+            if (!isPrimaryKey(getTableId(operationVO.getTableName()), columnName)) {
+                concatenatedValues += ("".equals(concatenatedValues) ? "" : "*") + columnName;
+            }
+        }
+        return concatenatedValues;
     }
 
     private void processUpdate(OperationVO operation) throws SQLException {
         Long tableId = getTableId(operation.getTableName());
         Statement stmt = conn.createStatement();
+        List<ColumnVO> allColumns = getAllColumnVOs(tableId);
+        List<ValueVO> allValues = getDataByCriteria(operation);
 
-
-        StringBuilder stmtText = new StringBuilder("UPDATE `data` SET value='");
-
-
-        stmtText.append(getWhereConditionDependingPk(tableId, operation));
-        stmt.executeUpdate(stmtText.toString());
+        for (ValueVO valueVO : allValues) { // all lines matching criteria
+            StringBuilder stmtText = new StringBuilder("UPDATE `value` SET `value`='");
+            boolean isFirst = true;
+            for (ColumnVO columnVO : allColumns) {
+                stmtText.append(isFirst ? "" : "*");
+                isFirst = false;
+                stmtText.append(getValueForColumn(valueVO, columnVO.getName(), operation));
+            }
+            stmtText.append("' WHERE `key`=")
+                    .append(tableId)
+                    .append(" and pk_value=")
+                    .append(valueVO.getPrimaryKey().getValue());
+            stmt.executeUpdate(stmtText.toString());
+        }
         stmt.close();
+    }
+
+    private String getValueForColumn(ValueVO valueVO, String columnName, OperationVO operation) throws SQLException {
+        if (isPrimaryKey(getTableId(operation.getTableName()), columnName)) {
+            return valueVO.getPrimaryKey().getValue();
+        }
+        SelectionCriteriaVO newValue = getNewValueForColumn(columnName, operation);
+        if (newValue == null) {
+            return valueVO.getOtherValues().stream()
+                    .filter(c -> c.getKey().equalsIgnoreCase(columnName))
+                    .map(SelectionCriteriaVO::getValue)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        //keep the old value
+        return newValue.getValue();
+    }
+
+    private SelectionCriteriaVO getNewValueForColumn(String columnName, OperationVO operationVO) {
+        return operationVO.getNewValues().stream()
+                .filter(sc -> sc.getKey().equalsIgnoreCase(columnName))
+                .findFirst()
+                .orElse(null);
     }
 
     private void processDelete(OperationVO operation) throws SQLException {
         Long tableId = getTableId(operation.getTableName());
-        StringBuilder stmtText = new StringBuilder("DELETE FROM `data` where `key` ="
+        StringBuilder stmtText = new StringBuilder("DELETE FROM `value` where `key` ="
                 + tableId + " AND ");
         stmtText.append(getWhereConditionDependingPk(tableId, operation));
         System.out.println(stmtText);
@@ -97,47 +157,49 @@ public class CommonDao {
     }
 
     private String getWhereConditionDependingPk(Long tableId, OperationVO operation) throws SQLException {
+        if (operation.getCriteria() == null) return "true";
+
         Long valueIndex = getValuePosition(tableId, operation.getCriteria().getKey());
 
         if (isPrimaryKey(tableId, operation.getCriteria().getKey())) {
-            return "pk_value=" + operation.getCriteria().getValue();
+            return " pk_value=" + operation.getCriteria().getValue();
         }
 
-        StringBuilder stmtText = new StringBuilder(
-                "SUBSTRING_INDEX(SUBSTRING_INDEX(`value`,'*'," + valueIndex + "),'*',-1) = '"
-                        + operation.getCriteria().getValue() + "'");
-
-        stmtText.append('`')
-                .append(operation.getCriteria().getKey())
-                .append("` = ")
-                .append(operation.getCriteria().getValue());
-        return stmtText.toString();
+        return new StringBuilder()
+                .append(" SUBSTRING_INDEX(SUBSTRING_INDEX(`value`,'*',")
+                .append(valueIndex)
+                .append("),'*',-1) = '")
+                .append(operation.getCriteria().getValue())
+                .append("'")
+//                .append('`')
+//                .append(operation.getCriteria().getKey())
+//                .append("` = ")
+//                .append(operation.getCriteria().getValue())
+                .toString();
     }
-
 
     // not done,for  condition key=value  it will check that value is by expected type
     private boolean isValidType(OperationVO operationVO) throws SQLException {
         List<String> columnsList = getColumns(getTableId(operationVO.getTableName()));
         SelectionCriteriaVO criteria = operationVO.getCriteria();
-        for (int i = 0; i < columnsList.size(); i++) {
-            String currentColumn = columnsList.get(i);
-            if (criteria.getKey().equals(currentColumn.substring(0, currentColumn.indexOf("#")))) {
-                if (criteria.getValue().equals(currentColumn.substring(currentColumn.indexOf("#"), currentColumn.lastIndexOf("#")))) {
-                    if (criteria.getValue().length() <= Integer.parseInt(currentColumn.substring(currentColumn.lastIndexOf("#"), currentColumn.length()))) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+//        for (int i = 0; i < columnsList.size(); i++) {
+//            String currentColumn = columnsList.get(i);
+//            if (criteria.getKey().equals(currentColumn.substring(0, currentColumn.indexOf("#")))) {
+////                if (criteria.getValue().equals(currentColumn.substring(currentColumn.indexOf("#"), currentColumn.lastIndexOf("#")))) {
+//                if (criteria.getValue().length() <= Integer.parseInt(currentColumn.substring(currentColumn.lastIndexOf("#"), currentColumn.length()))) {
+//                    return true;
+//                }
+////                }
+//            }
+//        }
+        return true;
     }
 
-    //
     private Long getMaxKeyFromTable(String tableName) throws SQLException {
+        Long tableId = getTableId(tableName);
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT MAX('KEY') FROM `" + tableName + "`");
+        ResultSet rs = stmt.executeQuery("SELECT MAX(`PK_VALUE`) FROM `value` WHERE `KEY`=" + tableId);
         rs.next();
-
         Long maxId = rs.getLong(1);
         rs.close();
         stmt.close();
@@ -146,7 +208,7 @@ public class CommonDao {
 
     private Long getTableId(String tableName) throws SQLException {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT `key` FROM `tables` WHERE VALUE LIKE `" + tableName + "`");
+        ResultSet rs = stmt.executeQuery("SELECT `key` FROM `tables` WHERE `VALUE` LIKE '" + tableName + "'");
         rs.next();
 
         Long maxId = rs.getLong(1);
@@ -160,7 +222,7 @@ public class CommonDao {
         Long value = 0L;
         for (String column : getColumns(tableId)) {
             value++;
-            if (column.split("#")[0].equals(columnName)) break;
+            if (column.split("#")[0].equalsIgnoreCase(columnName)) break;
         }
         return value;
     }
@@ -168,7 +230,8 @@ public class CommonDao {
 
     private List<String> getColumns(Long tableId) throws SQLException {
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT value FROM `column` WHERE `key` =" + tableId);
+        ResultSet rs = stmt.executeQuery("SELECT value FROM `column` WHERE `key` =" +
+                tableId);
         rs.next();
 
         String allColumns = rs.getString(1);
@@ -184,34 +247,42 @@ public class CommonDao {
     private boolean isPrimaryKey(Long tableId, String columnName) throws SQLException {
         for (String column : getColumns(tableId)) {
             String[] columnAttributes = column.split("#");
-            if (columnAttributes[0].equals(columnName)) {
+            if (columnAttributes[0].equalsIgnoreCase(columnName)) {
                 return columnAttributes[3].equals("1");
             }
         }
         return false;
     }
 
-
-    private List<String> getDataByCriteria(OperationVO operation) throws SQLException {
+    private List<ValueVO> getDataByCriteria(OperationVO operation) throws SQLException {
         Long tableId = getTableId(operation.getTableName());
-        StringBuilder stmtText = new StringBuilder("SELECT pk_value, value FROM `data` where `key` ="
+        StringBuilder stmtText = new StringBuilder("SELECT pk_value, value FROM `value` where `key` ="
                 + tableId + " AND ");
         stmtText.append(getWhereConditionDependingPk(tableId, operation));
-        System.out.println(stmtText);
 
+        List<ValueVO> valueVOS = new ArrayList<>();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(stmtText.toString());
         while (rs.next()) {
+            ValueVO valueVO = new ValueVO();
             Long primaryKeyValue = rs.getLong(1);
-            String otherValues = rs.getString(2);
-
+            String[] otherValues = rs.getString(2).split("\\*");
+            int i = 0;
+            for (ColumnVO columnVO : getAllColumnVOs(tableId)) {
+                if (columnVO.isPrimaryKey()) {
+                    valueVO.setPrimaryKey(new SelectionCriteriaVO(columnVO.getName(), primaryKeyValue.toString()));
+                } else {
+                    valueVO.getOtherValues().add(new SelectionCriteriaVO(columnVO.getName(), otherValues[i]));
+                    i++;
+                }
+            }
+            valueVOS.add(valueVO);
         }
-
 
         rs.close();
         stmt.close();
 
-        return null;
+        return valueVOS;
     }
 
     private ColumnVO toColumnVO(String fullColumn) {
@@ -220,5 +291,60 @@ public class CommonDao {
                 getByValue(columnAttributes[1]),
                 Long.parseLong(columnAttributes[2]),
                 columnAttributes[3].equals("1"));
+    }
+
+    private List<ColumnVO> getAllColumnVOs(Long tableId) throws SQLException {
+        return getColumns(tableId).stream()
+                .map(this::toColumnVO)
+                .collect(Collectors.toList());
+    }
+
+    public void executeTableOperation(TableOperationVO tableOperationVO) throws SQLException {
+        switch (tableOperationVO.getTableOperation()) {
+            case CREATE: {
+                processCreateTable(tableOperationVO);
+                return;
+            }
+            case DROP: {
+                processDropTable(tableOperationVO);
+                return;
+            }
+        }
+    }
+
+    private void processDropTable(TableOperationVO tableOperationVO) throws SQLException {
+        if (!existsTable(tableOperationVO.getName())) {
+            System.out.println("The table " + tableOperationVO.getName() + " not exists");
+            return;
+        }
+        OperationVO operationVO = new OperationVO();
+        operationVO.setTableName(tableOperationVO.getName());
+        operationVO.setOperation(DELETE); // delete all records from given table
+
+        Long tableId = getTableId(tableOperationVO.getName());
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate("DELETE FROM `column` WHERE `key` =" + tableId);
+        stmt.executeUpdate("DELETE FROM `tables` WHERE `key` =" + tableId);
+
+        stmt.close();
+    }
+
+    private void processCreateTable(TableOperationVO operationVO) throws SQLException {
+        if (existsTable(operationVO.getName())) {
+            System.out.println("Table already exists!");
+        }
+
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate("INSERT INTO `tables`(`key`) VALUE ('" + operationVO.getName() + "')");
+        Long tableId = getTableId(operationVO.getName());
+
+        for (ColumnVO columnVO : operationVO.getColumns()) {
+            stmt.executeUpdate("INSERT INTO `columns`(`key`,`value`) VALUES(" + tableId + "," +
+                    columnVO.getName() + "*" + columnVO.getType() + "*" + columnVO.getLength() + "*"
+                    + (columnVO.isPrimaryKey() ? "1" : "0") +
+                    ")");
+        }
+        stmt.close();
+
     }
 }
